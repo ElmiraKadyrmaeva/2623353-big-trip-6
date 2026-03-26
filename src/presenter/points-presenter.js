@@ -7,28 +7,31 @@ import MakeFormView from '../view/make-form-view.js';
 import PointView from '../view/point-view.js';
 import TripEventsListView from '../view/trip-events-list-view.js';
 
-const POINT_COUNT = 3;
-
 export default class PointsPresenter {
-  constructor({tripControlsContainer, tripEventsContainer}) {
+  constructor({tripControlsContainer, tripEventsContainer, pointsModel}) {
     this.tripControlsContainer = tripControlsContainer;
     this.tripEventsContainer = tripEventsContainer;
+    this.pointsModel = pointsModel;
   }
 
   init() {
     render(new FilterView(), this.tripControlsContainer);
-
     render(new SortView(), this.tripEventsContainer);
 
     const tripEventsListComponent = new TripEventsListView();
     render(tripEventsListComponent, this.tripEventsContainer);
 
     render(new EditFormView(), tripEventsListComponent.getElement(), RenderPosition.AFTERBEGIN);
-
     render(new MakeFormView(), tripEventsListComponent.getElement());
 
-    for (let i = 0; i < POINT_COUNT; i++) {
-      render(new PointView(), tripEventsListComponent.getElement());
-    }
+    this.pointsModel.getPoints()
+      .slice(-3)
+      .forEach((point) => {
+        const destination = this.pointsModel.getDestinationById(point.destination);
+        const offersByType = this.pointsModel.getOffersByType(point.type);
+        const offers = offersByType ? offersByType.offers : [];
+
+        render(new PointView({point, destination, offers}), tripEventsListComponent.getElement());
+      });
   }
 }
