@@ -75,7 +75,7 @@ const createPoint = ({id, destinations, offersByType}) => {
   };
 };
 
-const generateMockData = (countPoints = 3) => {
+const generateMockData = (countPoints = 10) => {
   const destinations = createDestinations(6);
   const offersByType = createOffersByType();
   const points = Array.from({length: countPoints}, (_, idx) =>
