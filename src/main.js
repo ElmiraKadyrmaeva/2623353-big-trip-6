@@ -5,7 +5,7 @@ import {generateMockData} from './mock/generator.js';
 const tripControlsContainer = document.querySelector('.trip-controls__filters');
 const tripEventsContainer = document.querySelector('.trip-events');
 
-const {destinations, offersByType, points} = generateMockData(3);
+const {destinations, offersByType, points} = generateMockData(5);
 
 const pointsModel = new PointsModel({
   points,

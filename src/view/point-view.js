@@ -1,4 +1,4 @@
-import {createElement} from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 
 const TYPE_TO_ICON = {
   taxi: 'taxi',
@@ -108,29 +108,30 @@ const createPointTemplate = ({point, destination, offers}) => {
   `;
 };
 
-export default class PointView {
-  constructor({point, destination, offers}) {
-    this.point = point;
-    this.destination = destination;
-    this.offers = offers;
-  }
+export default class PointView extends AbstractView {
+  #point;
+  #destination;
+  #offers;
+  #handleEditClick;
 
-  getTemplate() {
-    return createPointTemplate({
-      point: this.point,
-      destination: this.destination,
-      offers: this.offers,
+  constructor({point, destination, offers, onEditClick}) {
+    super();
+    this.#point = point;
+    this.#destination = destination;
+    this.#offers = offers;
+    this.#handleEditClick = onEditClick;
+
+    this.element.querySelector('.event__rollup-btn').addEventListener('click', (evt) => {
+      evt.preventDefault();
+      this.#handleEditClick();
     });
   }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
-    return this.element;
-  }
-
-  removeElement() {
-    this.element = null;
+  get template() {
+    return createPointTemplate({
+      point: this.#point,
+      destination: this.#destination,
+      offers: this.#offers,
+    });
   }
 }
