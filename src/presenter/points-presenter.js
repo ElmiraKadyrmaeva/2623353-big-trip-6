@@ -5,6 +5,7 @@ import SortView from '../view/sort-view.js';
 import PointView from '../view/point-view.js';
 import EditFormView from '../view/edit-form-view.js';
 import TripEventsListView from '../view/trip-events-list-view.js';
+import EmptyListView from '../view/empty-list-view.js';
 
 export default class PointsPresenter {
   constructor({tripControlsContainer, tripEventsContainer, pointsModel}) {
@@ -16,13 +17,39 @@ export default class PointsPresenter {
   }
 
   init() {
-    render(new FilterView(), this.tripControlsContainer);
-    render(new SortView(), this.tripEventsContainer);
+    const filters = [
+      {type: 'everything', title: 'Everything', isChecked: true, isDisabled: false},
+      {type: 'future', title: 'Future', isChecked: false, isDisabled: false},
+      {type: 'present', title: 'Present', isChecked: false, isDisabled: false},
+      {type: 'past', title: 'Past', isChecked: false, isDisabled: false},
+    ];
+
+    const sortItems = [
+      {type: 'day', title: 'Day', isChecked: true, isDisabled: false},
+      {type: 'event', title: 'Event', isChecked: false, isDisabled: true},
+      {type: 'time', title: 'Time', isChecked: false, isDisabled: true},
+      {type: 'price', title: 'Price', isChecked: false, isDisabled: true},
+      {type: 'offers', title: 'Offers', isChecked: false, isDisabled: true},
+    ];
+
+    render(new FilterView({filters}), this.tripControlsContainer);
+
+    const points = this.pointsModel.getPoints();
+
+    if (points.length === 0) {
+      render(
+        new EmptyListView({message: 'Click New Event to create your first point'}),
+        this.tripEventsContainer
+      );
+      return;
+    }
+
+    render(new SortView({sortItems}), this.tripEventsContainer);
 
     this.tripEventsListComponent = new TripEventsListView();
     render(this.tripEventsListComponent, this.tripEventsContainer);
 
-    this.pointsModel.getPoints()
+    points
       .slice(-5)
       .forEach((point) => this.#renderPoint(point));
   }
