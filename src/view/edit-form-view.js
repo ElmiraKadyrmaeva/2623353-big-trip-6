@@ -103,15 +103,8 @@ export default class EditFormView extends AbstractView {
 
     this.#handleFormSubmit = onFormSubmit;
     this.#handleRollupClick = onRollupClick;
-  }
 
-  setHandlers() {
-    this.element.querySelector('form')?.addEventListener('submit', this.#handleFormSubmit);
-
-    this.element.querySelector('.event__rollup-btn')?.addEventListener('click', (evt) => {
-      evt.preventDefault();
-      this.#handleRollupClick?.();
-    });
+    this.setHandlers();
   }
 
   get template() {
@@ -119,6 +112,18 @@ export default class EditFormView extends AbstractView {
       point: this.#point,
       destination: this.#destination,
       offers: this.#offers,
+    });
+  }
+
+  setHandlers() {
+    this.element.querySelector('form')?.addEventListener('submit', (evt) => {
+      evt.preventDefault();
+      this.#handleFormSubmit?.(evt);
+    });
+
+    this.element.querySelector('.event__rollup-btn')?.addEventListener('click', (evt) => {
+      evt.preventDefault();
+      this.#handleRollupClick?.();
     });
   }
 }

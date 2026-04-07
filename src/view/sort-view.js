@@ -8,6 +8,7 @@ const createSortItemTemplate = ({type, title, isChecked, isDisabled}) => `
       type="radio"
       name="trip-sort"
       value="sort-${type}"
+      data-sort-type="${type}"
       ${isChecked ? 'checked' : ''}
       ${isDisabled ? 'disabled' : ''}
     >
@@ -23,13 +24,30 @@ const createSortTemplate = (sortItems) => `
 
 export default class SortView extends AbstractView {
   #sortItems;
+  #handleSortTypeChange;
 
-  constructor({sortItems}) {
+  constructor({sortItems, onSortTypeChange}) {
     super();
     this.#sortItems = sortItems;
+    this.#handleSortTypeChange = onSortTypeChange;
+
+    this.element.addEventListener('click', this.#sortClickHandler);
   }
 
   get template() {
     return createSortTemplate(this.#sortItems);
   }
+
+  #sortClickHandler = (evt) => {
+    const input = evt.target.closest('.trip-sort__btn')
+      ? document.getElementById(evt.target.getAttribute('for'))
+      : evt.target.closest('.trip-sort__input');
+
+    if (!input || input.disabled) {
+      return;
+    }
+
+    evt.preventDefault();
+    this.#handleSortTypeChange(input.dataset.sortType);
+  };
 }
