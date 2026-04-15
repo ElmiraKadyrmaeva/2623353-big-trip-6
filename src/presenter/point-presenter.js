@@ -12,8 +12,9 @@ export default class PointPresenter {
   #pointsListContainer = null;
 
   #point = null;
-  #destination = null;
-  #offers = null;
+
+  #destinations = [];
+  #offersByType = [];
 
   #pointComponent = null;
   #editFormComponent = null;
@@ -29,26 +30,30 @@ export default class PointPresenter {
     this.#handleModeChange = onModeChange;
   }
 
-  init({point, destination, offers}) {
+  init({point, destinations, offersByType}) {
     this.#point = point;
-    this.#destination = destination;
-    this.#offers = offers;
+    this.#destinations = destinations;
+    this.#offersByType = offersByType;
 
     const prevPointComponent = this.#pointComponent;
     const prevEditFormComponent = this.#editFormComponent;
 
+    const destination = this.#destinations.find((d) => d.id === this.#point.destination);
+    const offersBlock = this.#offersByType.find((o) => o.type === this.#point.type);
+    const offers = offersBlock ? offersBlock.offers : [];
+
     this.#pointComponent = new PointView({
       point: this.#point,
-      destination: this.#destination,
-      offers: this.#offers,
+      destination,
+      offers,
       onEditClick: this.#handleEditClick,
       onFavoriteClick: this.#handleFavoriteClick,
     });
 
     this.#editFormComponent = new EditFormView({
       point: this.#point,
-      destination: this.#destination,
-      offers: this.#offers,
+      destinations: this.#destinations,
+      offersByType: this.#offersByType,
       onFormSubmit: this.#handleFormSubmit,
       onRollupClick: this.#handleRollupClick,
     });
