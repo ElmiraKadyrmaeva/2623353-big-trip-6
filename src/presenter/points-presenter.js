@@ -55,18 +55,19 @@ export default class PointsPresenter {
     this.#renderBoard();
   }
 
-  #handleSortTypeChange = (sortType) => {
-    if (this.#currentSortType === sortType) {
-      return;
+  #getDestinations() {
+    if (typeof this.#pointsModel.getDestinations === 'function') {
+      return this.#pointsModel.getDestinations();
     }
+    return this.#pointsModel.destinations ?? [];
+  }
 
-    this.#currentSortType = sortType;
-
-    this.#handleModeChange();
-
-    this.#clearBoard();
-    this.#renderBoard();
-  };
+  #getOffersByTypeList() {
+    if (typeof this.#pointsModel.getOffersByTypeList === 'function') {
+      return this.#pointsModel.getOffersByTypeList();
+    }
+    return this.#pointsModel.offersByType ?? [];
+  }
 
   #getSortedPoints() {
     const points = [...this.#pointsModel.getPoints()];
@@ -84,6 +85,19 @@ export default class PointsPresenter {
 
     return points;
   }
+
+  #handleSortTypeChange = (sortType) => {
+    if (this.#currentSortType === sortType) {
+      return;
+    }
+
+    this.#currentSortType = sortType;
+
+    this.#handleModeChange();
+
+    this.#clearBoard();
+    this.#renderBoard();
+  };
 
   #renderBoard() {
     const points = this.#getSortedPoints();
@@ -119,17 +133,18 @@ export default class PointsPresenter {
   }
 
   #renderPoint(point) {
-    const destination = this.#pointsModel.getDestinationById(point.destination);
-    const offersByType = this.#pointsModel.getOffersByType(point.type);
-    const offers = offersByType ? offersByType.offers : [];
-
     const pointPresenter = new PointPresenter({
       pointsListContainer: this.#tripEventsListComponent.element,
       onDataChange: this.#handlePointChange,
       onModeChange: this.#handleModeChange,
     });
 
-    pointPresenter.init({point, destination, offers});
+    pointPresenter.init({
+      point,
+      destinations: this.#getDestinations(),
+      offersByType: this.#getOffersByTypeList(),
+    });
+
     this.#pointPresenters.set(point.id, pointPresenter);
   }
 
@@ -146,14 +161,15 @@ export default class PointsPresenter {
 
     points[index] = updatedPoint;
 
-    const destination = this.#pointsModel.getDestinationById(updatedPoint.destination);
-    const offersByType = this.#pointsModel.getOffersByType(updatedPoint.type);
-    const offers = offersByType ? offersByType.offers : [];
+    const presenter = this.#pointPresenters.get(updatedPoint.id);
+    if (!presenter) {
+      return;
+    }
 
-    this.#pointPresenters.get(updatedPoint.id).init({
+    presenter.init({
       point: updatedPoint,
-      destination,
-      offers,
+      destinations: this.#getDestinations(),
+      offersByType: this.#getOffersByTypeList(),
     });
   };
 
