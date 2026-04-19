@@ -1,4 +1,7 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
+import dayjs from 'dayjs';
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
 
 const TYPE_TO_ICON = {
   taxi: 'taxi',
@@ -12,20 +15,10 @@ const TYPE_TO_ICON = {
   restaurant: 'restaurant',
 };
 
-const pad2 = (n) => String(n).padStart(2, '0');
+const EDIT_DATE_FORMAT = 'DD/MM/YY HH:mm';
+const FLATPICKR_DATE_FORMAT = 'd/m/y H:i';
 
-const formatEditDateTime = (isoString) => {
-  if (!isoString) {
-    return '';
-  }
-  const d = new Date(isoString);
-  const day = pad2(d.getDate());
-  const month = pad2(d.getMonth() + 1);
-  const year = String(d.getFullYear()).slice(-2);
-  const hours = pad2(d.getHours());
-  const minutes = pad2(d.getMinutes());
-  return `${day}/${month}/${year} ${hours}:${minutes}`;
-};
+const formatEditDateTime = (isoString) => (isoString ? dayjs(isoString).format(EDIT_DATE_FORMAT) : '');
 
 const createPhotosTemplate = (pictures = []) => {
   if (!pictures.length) {
@@ -198,6 +191,9 @@ export default class EditFormView extends AbstractStatefulView {
   #handleFormSubmit = null;
   #handleRollupClick = null;
 
+  #startDatepicker = null;
+  #endDatepicker = null;
+
   constructor({point, destinations, offersByType, onFormSubmit, onRollupClick}) {
     super();
     this._setState(EditFormView.parsePointToState(point));
@@ -225,7 +221,67 @@ export default class EditFormView extends AbstractStatefulView {
 
     this.element.querySelector('.event__type-group')?.addEventListener('change', this.#typeChangeHandler);
     this.element.querySelector('.event__input--destination')?.addEventListener('change', this.#destinationChangeHandler);
+
+    this.element.querySelector('.event__available-offers')?.addEventListener('change', this.#offersChangeHandler);
+
+    this.#setDatepickers();
   }
+
+  #destroyDatepickers() {
+    if (this.#startDatepicker) {
+      this.#startDatepicker.destroy();
+      this.#startDatepicker = null;
+    }
+    if (this.#endDatepicker) {
+      this.#endDatepicker.destroy();
+      this.#endDatepicker = null;
+    }
+  }
+
+  #setDatepickers() {
+    this.#destroyDatepickers();
+
+    const startInput = this.element.querySelector(`#event-start-time-${this._state.id}`);
+    const endInput = this.element.querySelector(`#event-end-time-${this._state.id}`);
+
+    if (!startInput || !endInput) {
+      return;
+    }
+
+    this.#startDatepicker = flatpickr(startInput, {
+      enableTime: true,
+      dateFormat: FLATPICKR_DATE_FORMAT,
+      'time_24hr': true,
+      defaultDate: this._state.dateFrom,
+      maxDate: this._state.dateTo,
+      onChange: this.#startDateChangeHandler,
+    });
+
+    this.#endDatepicker = flatpickr(endInput, {
+      enableTime: true,
+      dateFormat: FLATPICKR_DATE_FORMAT,
+      'time_24hr': true,
+      defaultDate: this._state.dateTo,
+      minDate: this._state.dateFrom,
+      onChange: this.#endDateChangeHandler,
+    });
+  }
+
+  #startDateChangeHandler = ([userDate]) => {
+    if (!userDate) {
+      return;
+    }
+    this._setState({dateFrom: userDate.toISOString()});
+    this.#endDatepicker?.set('minDate', userDate);
+  };
+
+  #endDateChangeHandler = ([userDate]) => {
+    if (!userDate) {
+      return;
+    }
+    this._setState({dateTo: userDate.toISOString()});
+    this.#startDatepicker?.set('maxDate', userDate);
+  };
 
   #formSubmitHandler = (evt) => {
     evt.preventDefault();
@@ -239,6 +295,9 @@ export default class EditFormView extends AbstractStatefulView {
 
   #typeChangeHandler = (evt) => {
     const newType = evt.target.value;
+
+    this.#destroyDatepickers();
+
     this.updateElement({
       type: newType,
       offers: [],
@@ -253,9 +312,31 @@ export default class EditFormView extends AbstractStatefulView {
       return;
     }
 
+    this.#destroyDatepickers();
+
     this.updateElement({
       destination: found.id,
     });
+  };
+
+  #offersChangeHandler = (evt) => {
+    const target = evt.target;
+    if (!target || target.type !== 'checkbox') {
+      return;
+    }
+
+    const idAttr = target.id || '';
+    const match = idAttr.match(/^event-offer-(.+)-.+$/);
+    if (!match) {
+      return;
+    }
+    const offerId = match[1];
+
+    const nextOffers = target.checked
+      ? [...this._state.offers, offerId]
+      : this._state.offers.filter((id) => id !== offerId);
+
+    this._setState({offers: nextOffers});
   };
 
   static parsePointToState(point) {

@@ -1,4 +1,5 @@
 import AbstractView from '../framework/view/abstract-view.js';
+import dayjs from 'dayjs';
 
 const TYPE_TO_ICON = {
   taxi: 'taxi',
@@ -12,34 +13,26 @@ const TYPE_TO_ICON = {
   restaurant: 'restaurant',
 };
 
-const formatMonthDay = (isoString) => {
-  const date = new Date(isoString);
-  const month = date.toLocaleString('en-US', {month: 'short'}).toUpperCase();
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${month} ${day}`;
-};
-
-const formatTime = (isoString) => {
-  const date = new Date(isoString);
-  const hh = String(date.getHours()).padStart(2, '0');
-  const mm = String(date.getMinutes()).padStart(2, '0');
-  return `${hh}:${mm}`;
-};
+const formatMonthDay = (isoString) => dayjs(isoString).format('MMM DD').toUpperCase();
+const formatTime = (isoString) => dayjs(isoString).format('HH:mm');
 
 const getDuration = (fromIso, toIso) => {
-  const from = new Date(fromIso);
-  const to = new Date(toIso);
-  const diff = to - from;
-  const minutes = Math.floor(diff / 60000);
+  const diffMinutes = dayjs(toIso).diff(dayjs(fromIso), 'minute');
 
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
+  const minutesInDay = 24 * 60;
+  const minutesInHour = 60;
 
-  if (hours === 0) {
-    return `${mins}M`;
+  const days = Math.floor(diffMinutes / minutesInDay);
+  const hours = Math.floor((diffMinutes % minutesInDay) / minutesInHour);
+  const minutes = diffMinutes % minutesInHour;
+
+  if (days > 0) {
+    return `${days}D ${hours}H ${minutes}M`;
   }
-
-  return mins === 0 ? `${hours}H` : `${hours}H ${mins}M`;
+  if (hours > 0) {
+    return minutes === 0 ? `${hours}H` : `${hours}H ${minutes}M`;
+  }
+  return `${minutes}M`;
 };
 
 const createPointTemplate = ({point, destination, offers}) => {
