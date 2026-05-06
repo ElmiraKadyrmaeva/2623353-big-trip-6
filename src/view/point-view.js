@@ -1,5 +1,6 @@
 import AbstractView from '../framework/view/abstract-view.js';
 import dayjs from 'dayjs';
+import he from 'he';
 
 const TYPE_TO_ICON = {
   taxi: 'taxi',
@@ -16,6 +17,10 @@ const TYPE_TO_ICON = {
 const formatMonthDay = (isoString) => dayjs(isoString).format('MMM DD').toUpperCase();
 const formatTime = (isoString) => dayjs(isoString).format('HH:mm');
 
+const capitalize = (value) => `${value[0].toUpperCase()}${value.slice(1)}`;
+
+const pad = (value) => String(value).padStart(2, '0');
+
 const getDuration = (fromIso, toIso) => {
   const diffMinutes = dayjs(toIso).diff(dayjs(fromIso), 'minute');
 
@@ -27,22 +32,26 @@ const getDuration = (fromIso, toIso) => {
   const minutes = diffMinutes % minutesInHour;
 
   if (days > 0) {
-    return `${days}D ${hours}H ${minutes}M`;
+    return `${pad(days)}D ${pad(hours)}H ${pad(minutes)}M`;
   }
+
   if (hours > 0) {
-    return minutes === 0 ? `${hours}H` : `${hours}H ${minutes}M`;
+    return `${pad(hours)}H ${pad(minutes)}M`;
   }
-  return `${minutes}M`;
+
+  return `${pad(minutes)}M`;
 };
 
 const createPointTemplate = ({point, destination, offers}) => {
   const icon = TYPE_TO_ICON[point.type] ?? 'flight';
+  const destinationName = destination ? destination.name : '';
+  const title = `${capitalize(point.type)} ${destinationName}`;
 
   const selectedOffers = offers
     .filter((offer) => point.offers.includes(offer.id))
     .map((offer) => `
       <li class="event__offer">
-        <span class="event__offer-title">${offer.title}</span>
+        <span class="event__offer-title">${he.encode(String(offer.title))}</span>
         &plus;&euro;&nbsp;<span class="event__offer-price">${offer.price}</span>
       </li>
     `)
@@ -58,18 +67,22 @@ const createPointTemplate = ({point, destination, offers}) => {
   const endTime = formatTime(point.dateTo);
   const duration = getDuration(point.dateFrom, point.dateTo);
 
-  const title = `${point.type[0].toUpperCase()}${point.type.slice(1)} ${destination.name}`;
-
   return `
     <li class="trip-events__item">
       <div class="event">
         <time class="event__date" datetime="${point.dateFrom}">${day}</time>
 
         <div class="event__type">
-          <img class="event__type-icon" width="42" height="42" src="img/icons/${icon}.png" alt="Event type icon">
+          <img
+            class="event__type-icon"
+            width="42"
+            height="42"
+            src="img/icons/${icon}.png"
+            alt="Event type icon"
+          >
         </div>
 
-        <h3 class="event__title">${title}</h3>
+        <h3 class="event__title">${he.encode(title)}</h3>
 
         <div class="event__schedule">
           <p class="event__time">
@@ -111,6 +124,7 @@ export default class PointView extends AbstractView {
 
   constructor({point, destination, offers, onEditClick, onFavoriteClick}) {
     super();
+
     this.#point = point;
     this.#destination = destination;
     this.#offers = offers;
@@ -118,16 +132,8 @@ export default class PointView extends AbstractView {
     this.#handleEditClick = onEditClick;
     this.#handleFavoriteClick = onFavoriteClick;
 
-    this.element.querySelector('.event__rollup-btn').addEventListener('click', (evt) => {
-      evt.preventDefault();
-      this.#handleEditClick?.();
-    });
-
-    this.element.querySelector('.event__favorite-btn').addEventListener('click', (evt) => {
-      evt.preventDefault();
-      evt.stopPropagation();
-      this.#handleFavoriteClick?.();
-    });
+    this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#editClickHandler);
+    this.element.querySelector('.event__favorite-btn').addEventListener('click', this.#favoriteClickHandler);
   }
 
   get template() {
@@ -137,4 +143,17 @@ export default class PointView extends AbstractView {
       offers: this.#offers,
     });
   }
+
+  #editClickHandler = (evt) => {
+    evt.preventDefault();
+
+    this.#handleEditClick?.();
+  };
+
+  #favoriteClickHandler = (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    this.#handleFavoriteClick?.();
+  };
 }
